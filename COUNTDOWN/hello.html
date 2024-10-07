@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVN to Git Migration Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/hi.css"> <!-- Linking external CSS file -->
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card shadow p-4">
+            <h2 class="text-center text-primary mb-4">SVN to Git Migration Tool</h2>
+            <form id="migrationForm" class="mt-3">
+                <div class="form-group">
+                    <label for="svnUrl">SVN Repository URL:</label>
+                    <input type="text" class="form-control" id="svnUrl" placeholder="Enter SVN URL" required>
+                </div>
+                <div class="form-group">
+                    <label for="gitDir">Git Target Directory:</label>
+                    <input type="text" class="form-control" id="gitDir" placeholder="Enter Git directory" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Start Migration</button>
+            </form>
+
+            <div id="migrationStatus" class="mt-4 text-center"></div>
+        </div>
+
+        <div class="mt-5">
+            <h4 class="text-primary">Commit History</h4>
+            <div class="table-responsive">
+                <table class="table table-striped mt-3 shadow-sm rounded">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Commit Hash</th>
+                            <th>Author</th>
+                            <th>Date</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commitTableBody">
+                        <!-- Commit history will be dynamically loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('migrationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const svnUrl = document.getElementById('svnUrl').value;
+            const gitDir = document.getElementById('gitDir').value;
+
+            document.getElementById('migrationStatus').innerText = "Starting migration...";
+
+            fetch('/migrate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ svnUrl, gitDir })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('migrationStatus').innerText = data.message;
+
+                // Fetch and display commit history
+                fetch('/commits')
+                    .then(response => response.json())
+                    .then(commits => {
+                        const tableBody = document.getElementById('commitTableBody');
+                        tableBody.innerHTML = ''; // Clear previous results
+                        commits.forEach(commit => {
+                            const row = `
+                                <tr>
+                                    <td>${commit.commit}</td>
+                                    <td>${commit.author}</td>
+                                    <td>${commit.date}</td>
+                                    <td>${commit.message}</td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                    });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('migrationStatus').innerText = "Error during migration.";
+            });
+        });
+    </script>
+</body>
+</html>
